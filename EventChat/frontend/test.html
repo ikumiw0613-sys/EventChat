@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Test</title>
+</head>
+<body>
+  <input id="username" type="text" placeholder="名前">
+  <input id="message" type="text" placeholder="メッセージ">
+  <button onclick="sendMessage()">送信</button>
+
+  <ul id="messages"></ul>
+
+  <script>
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws/events/1");
+
+    socket.onmessage = function(event) {
+      const message = JSON.parse(event.data);
+
+      const li = document.createElement("li");
+      li.textContent = message.username + ": " + message.content;
+      document.getElementById("messages").appendChild(li);
+    };
+
+    function sendMessage() {
+      const username = document.getElementById("username").value;
+      
+      const input = document.getElementById("message");
+      socket.send(JSON.stringify({
+        username: username,
+        content: input.value
+      }));
+      input.value = "";
+    }
+  </script>
+</body>
+</html>
