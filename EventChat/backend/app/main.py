@@ -1,11 +1,20 @@
 from fastapi import FastAPI
 from sqlmodel import SQLModel, Session,select
+from fastapi import WebSocket
 
 from app.database import engine
 from app.models import Event
 from app.models import Message
 
 app = FastAPI()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+   await websocket.accept()
+
+   while True:
+      data = await websocket.receive_text()
+      await websocket.send_text(data)
 
 @app.on_event("startup")
 def on_startup():
@@ -49,5 +58,12 @@ def create_message(event_id: int, message: Message):
       session.commit()
       session.refresh(db_message)
       return db_message
+
+@app.get("/events/{event_id}/messages")
+def get_messages(event_id: int):
+   with Session(engine) as session:
+      statement = select(Message).where(Message.event_id == event_id)
+      messages = session.exec(statement).all()
+      return messages
 
    
