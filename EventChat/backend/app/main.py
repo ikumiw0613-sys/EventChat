@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, Session,select
 
 from app.database import engine
 from app.models import Event
+from app.models import Message
 
 app = FastAPI()
 
@@ -35,3 +36,18 @@ def get_event(event_id: int):
             return {"message": "Event not found"}
 
         return event
+
+@app.post("/events/{event_id}/messages")
+def create_message(event_id: int, message: Message):
+   with Session(engine) as session:
+      db_message = Message(
+         event_id = event_id,
+         username = message.username,
+         content=message.content
+      )
+      session.add(db_message)
+      session.commit()
+      session.refresh(db_message)
+      return db_message
+
+   
