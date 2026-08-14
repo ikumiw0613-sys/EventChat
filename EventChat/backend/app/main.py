@@ -5,6 +5,7 @@ from sqlmodel import SQLModel, Session,select
 from app.database import engine
 from app.models import Event
 from app.models import Message
+import json
 
 app = FastAPI()
 
@@ -85,13 +86,36 @@ manager = ConnectionManager()
 
 
 @app.websocket("/ws/events/{event_id}")
-async def websocket_endpoint(websocket: WebSocket,event_id: int):
+async def event_websocket(websocket: WebSocket,event_id: int):
    await manager.connect(event_id,websocket)
 
    try:
       while True:
          data = await websocket.receive_text()
-         await manager.broadcast(event_id,data)
+
+         message_data = json.loads(data)
+
+         with Session(engine) as session:
+            db_message = Message(
+               event_id=event_id,
+               username = message_data["username"],
+               content=message_data["content"]
+            )
+
+            session.add(db_message)
+            session.commit()
+            session.refresh(db_message)
+
+         await manager.broadcast(
+            event_id,
+            json.dumps({
+               "id" : db_message.id,
+               "event_id" : db_message.event_id,
+               "username" : db_message.username,
+               "content" : db_message.content,
+               "created_at" : db_message.created_at.isoformat()
+            })
+         )
 
    except WebSocketDisconnect:
       manager.disconnect(event_id,websocket)
