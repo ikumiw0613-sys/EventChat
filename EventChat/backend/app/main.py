@@ -1,20 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,WebSocket,WebSocketDisconnect
 from sqlmodel import SQLModel, Session,select
-from fastapi import WebSocket
+
 
 from app.database import engine
 from app.models import Event
 from app.models import Message
 
 app = FastAPI()
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-   await websocket.accept()
-
-   while True:
-      data = await websocket.receive_text()
-      await websocket.send_text(data)
 
 @app.on_event("startup")
 def on_startup():
@@ -66,4 +58,40 @@ def get_messages(event_id: int):
       messages = session.exec(statement).all()
       return messages
 
-   
+
+class ConnectionManager:
+   def __init__(self):
+      self.active_connections: dict[int, list[WebSocket]] = {}
+
+   async def connect(self,event_id: int, websocket: WebSocket):
+      await websocket.accept()
+
+      if event_id not in self.active_connections:
+         self.active_connections[event_id] = []
+      self.active_connections[event_id].append(websocket)
+
+
+   def disconnect(self,event_id: int,websocket: WebSocket):
+      self.active_connections[event_id].remove(websocket)
+
+      if not self.active_connections[event_id]:
+         del self.active_connections[event_id]
+
+   async def broadcast(self,event_id: int,message: str):
+      for connection in self.active_connections.get(event_id,[]):
+         await connection.send_text(message)
+
+manager = ConnectionManager()
+
+
+@app.websocket("/ws/events/{event_id}")
+async def websocket_endpoint(websocket: WebSocket,event_id: int):
+   await manager.connect(event_id,websocket)
+
+   try:
+      while True:
+         data = await websocket.receive_text()
+         await manager.broadcast(event_id,data)
+
+   except WebSocketDisconnect:
+      manager.disconnect(event_id,websocket)
