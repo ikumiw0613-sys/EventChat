@@ -23,3 +23,11 @@
 Frontend → FastAPI → PostgreSQL
               ↕
           WebSocket
+
+## 実装済み機能
+ - イベント作成 
+ - イベント一覧取得
+ - PostgreSQLへのイベント保存
+ - メッセージ投稿
+ - イベントごとのメッセージ取得
+ - WebSocketによるリアルタイム通信
