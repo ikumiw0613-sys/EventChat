@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Test</title>
+</head>
+<body>
+  <h1 id="eventName"></h1>
+  <input id="username" type="text" placeholder="名前">
+  <input id="message" type="text" placeholder="メッセージ">
+  <button onclick="sendMessage()">送信</button>
+
+  <ul id="messages"></ul>
+
+  <script>
+    const params = new URLSearchParams(
+      window.location.search
+    );
+    const eventId = params.get("eventId");
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/events/${eventId}`);
+
+
+    //過去ログの取得
+    async function loadMessages() {
+      const response = await fetch(
+        `http://127.0.0.1:8000/events/${eventId}/messages`
+      );
+
+      const messages = await response.json();
+
+      for(const message of messages) {
+        displayMessage(message);
+      }
+    }
+
+    //メッセージを表示
+    function displayMessage(message) {
+      const li = document.createElement("li");
+      li.textContent = message.username + ": " + message.content;
+
+      document.getElementById("messages").appendChild(li);
+    }
+
+    //新しいメッセージを受信
+    socket.onmessage = function(event) {
+      const message = JSON.parse(event.data);
+      displayMessage(message);
+    };
+
+    function sendMessage() {
+      const username = document.getElementById("username").value;
+      
+      const input = document.getElementById("message");
+      socket.send(JSON.stringify({
+        username: username,
+        content: input.value
+      }));
+      input.value = "";
+    }
+
+    loadMessages();
+  </script>
+</body>
+</html>

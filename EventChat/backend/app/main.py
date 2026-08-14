@@ -128,3 +128,5 @@ async def event_websocket(websocket: WebSocket,event_id: int):
 
    except WebSocketDisconnect:
       manager.disconnect(event_id,websocket)
+
+
