@@ -12,14 +12,35 @@
   <ul id="messages"></ul>
 
   <script>
-    const socket = new WebSocket("ws://127.0.0.1:8000/ws/events/1");
+    const event_id = 1;
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/events/${event_id}`);
 
-    socket.onmessage = function(event) {
-      const message = JSON.parse(event.data);
 
+    //過去ログの取得
+    async function loadMessages() {
+      const response = await fetch(
+        `http://127.0.0.1:8000/events/${event_id}/messages`
+      );
+
+      const messages = await response.json();
+
+      for(const message of messages) {
+        displayMessage(message);
+      }
+    }
+
+    //メッセージを表示
+    function displayMessage(message) {
       const li = document.createElement("li");
       li.textContent = message.username + ": " + message.content;
+
       document.getElementById("messages").appendChild(li);
+    }
+
+    //新しいメッセージを受信
+    socket.onmessage = function(event) {
+      const message = JSON.parse(event.data);
+      displayMessage(message);
     };
 
     function sendMessage() {
@@ -32,6 +53,8 @@
       }));
       input.value = "";
     }
+
+    loadMessages();
   </script>
 </body>
 </html>
