@@ -12,3 +12,6 @@ class Message(SQLModel,table = True):
     username:str
     content:str
     created_at:datetime = Field(default_factory=datetime.now)
+
+class EventCreate(SQLModel):
+    name: str

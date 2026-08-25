@@ -38,6 +38,8 @@ def create_event(event:Event):
 
     return event
 
+
+
 @app.get("/events/{event_id}")
 def get_event(event_id: int):
     with Session(engine) as session:

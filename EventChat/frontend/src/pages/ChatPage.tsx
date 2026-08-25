@@ -9,6 +9,11 @@ type Message = {
   created_at: string;
 };
 
+type EventInfo = {
+  id: number;
+  name: string;
+};
+
 function ChatPage() {
   const { eventId } = useParams();
 
@@ -19,8 +24,15 @@ function ChatPage() {
 
   const socketRef = useRef<WebSocket | null>(null);
 
+  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
+
   useEffect(() => {
     if (!eventId) return;
+
+    // イベント情報取得
+    fetch(`http://127.0.0.1:8000/events/${eventId}`)
+    .then((response) => response.json())
+    .then((data) => setEventInfo(data));
 
     // 過去ログ取得
     fetch(`http://127.0.0.1:8000/events/${eventId}/messages`)
@@ -85,7 +97,7 @@ function ChatPage() {
 
   return (
     <div>
-      <h1>チャット</h1>
+      <h1>{eventInfo ? eventInfo.name : "読み込み中..."}</h1>
 
       <p>参加者名: {username}</p>
 
@@ -98,10 +110,15 @@ function ChatPage() {
       </ul>
 
       <input
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
+  value={content}
+  onChange={(e) => setContent(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+       }
+        }}
         placeholder="メッセージ"
-      />
+      /> 
 
       <button onClick={sendMessage}>
         送信
