@@ -12,6 +12,7 @@ function EventList() {
   const [events, setEvents] = useState<Event[]>([]);
   const [eventName, setEventName] = useState("");
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   function loadEvents() {
     fetch("http://127.0.0.1:8000/events")
@@ -24,33 +25,43 @@ function EventList() {
   }, []);
 
   async function createEvent() {
-  if (!eventName.trim()) return;
+  if (!eventName.trim()) {
+    setError("イベント名を入力してください");
+    return;
+  }
 
-  const response = await fetch(
-    "http://127.0.0.1:8000/events",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: eventName,
-      }),
+  setError("");
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/events",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: eventName,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("イベント作成に失敗しました");
     }
-  );
 
-  if (!response.ok) return;
+    const newEvent = await response.json();
+    navigate(`/events/${newEvent.id}`);
 
-  const newEvent = await response.json();
-
-  setEventName("");
-
-  navigate(`/events/${newEvent.id}`);
+  } catch (error) {
+    setError("イベントを作成できませんでした");
+  }
 }
 
   return (
     <div>
       <h1>イベント一覧</h1>
+      {error && <p>{error}</p>}
 
       <input
         value={eventName}
