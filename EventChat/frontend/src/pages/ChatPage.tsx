@@ -25,6 +25,7 @@ function ChatPage() {
   const socketRef = useRef<WebSocket | null>(null);
 
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!eventId) return;
@@ -64,18 +65,35 @@ function ChatPage() {
   }
 
   function sendMessage() {
-    if (!content.trim()) return;
-    if (!socketRef.current) return;
-
-    socketRef.current.send(
-      JSON.stringify({
-        username: username,
-        content: content,
-      })
-    );
-
-    setContent("");
+  if (!content.trim()) {
+    setError("メッセージを入力してください");
+    return;
   }
+
+  if (!username.trim()) {
+    setError("名前が設定されていません");
+    return;
+  }
+
+  if (
+    !socketRef.current ||
+    socketRef.current.readyState !== WebSocket.OPEN
+  ) {
+    setError("サーバーに接続できていません");
+    return;
+  }
+
+  setError("");
+
+  socketRef.current.send(
+    JSON.stringify({
+      username,
+      content,
+    })
+  );
+
+  setContent("");
+}
 
   if (!username) {
     return (
@@ -96,35 +114,44 @@ function ChatPage() {
   }
 
   return (
-    <div>
-      <h1>{eventInfo ? eventInfo.name : "読み込み中..."}</h1>
+  <div className="container">
+    <div className="card">
+      <h1>{eventInfo?.name ?? "読み込み中..."}</h1>
 
       <p>参加者名: {username}</p>
 
-      <ul>
+      {error && <p className="error">{error}</p>}
+
+      <ul className="message-list">
         {messages.map((message) => (
-          <li key={message.id}>
-            {message.username}: {message.content}
+          <li key={message.id} className="message-item">
+            <span className="message-name">
+              {message.username}
+            </span>
+            {message.content}
           </li>
         ))}
       </ul>
 
-      <input
-  value={content}
-  onChange={(e) => setContent(e.target.value)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      sendMessage();
-       }
-        }}
-        placeholder="メッセージ"
-      /> 
+      <div className="message-form">
+        <input
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              sendMessage();
+            }
+          }}
+          placeholder="メッセージを入力"
+        />
 
-      <button onClick={sendMessage}>
-        送信
-      </button>
+        <button onClick={sendMessage}>
+          送信
+        </button>
+      </div>
     </div>
-  );
+  </div>
+);
 }
 
 export default ChatPage;

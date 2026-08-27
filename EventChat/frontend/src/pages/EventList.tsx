@@ -59,24 +59,28 @@ function EventList() {
 }
 
   return (
-    <div>
+  <div className="container">
+    <div className="card">
       <h1>イベント一覧</h1>
-      {error && <p>{error}</p>}
 
-      <input
-        value={eventName}
-        onChange={(e) => setEventName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            createEvent();
-          }
-        }}
-        placeholder="イベント名"
-      />
+      <div style={{ display: "flex", gap: "8px" }}>
+        <input
+          value={eventName}
+          onChange={(e) => setEventName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              createEvent();
+            }
+          }}
+          placeholder="イベント名"
+        />
 
-      <button onClick={createEvent}>
-        イベント作成
-      </button>
+        <button onClick={createEvent}>
+          イベント作成
+        </button>
+      </div>
+
+      {error && <p className="error">{error}</p>}
 
       <ul>
         {events.map((event) => (
@@ -88,7 +92,8 @@ function EventList() {
         ))}
       </ul>
     </div>
-  );
+  </div>
+);
 }
 
 export default EventList;
