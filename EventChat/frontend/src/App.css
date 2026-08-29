@@ -105,3 +105,26 @@ button:hover {
   height: 1px;
   list-style: none;
 }
+
+.event-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.event-card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: white;
+}
+
+.event-card h2 {
+  margin-top: 0;
+}
+
+.event-card a {
+  text-decoration: none;
+  font-weight: bold;
+}
