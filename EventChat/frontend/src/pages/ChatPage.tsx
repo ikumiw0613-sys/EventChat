@@ -123,15 +123,25 @@ function ChatPage() {
       {error && <p className="error">{error}</p>}
 
       <ul className="message-list">
-        {messages.map((message) => (
-          <li key={message.id} className="message-item">
-            <span className="message-name">
-              {message.username}
-            </span>
-            {message.content}
-          </li>
-        ))}
-      </ul>
+  {messages.map((message) => {
+    const isMine = message.username === username;
+
+    return (
+      <li
+        key={message.id}
+        className={`message-row ${isMine ? "mine" : "other"}`}
+      >
+        <div className="message-bubble">
+          <span className="message-name">
+            {message.username}
+          </span>
+
+          <div>{message.content}</div>
+        </div>
+      </li>
+    );
+  })}
+</ul>
 
       <div className="message-form">
         <input

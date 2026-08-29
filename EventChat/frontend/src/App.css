@@ -45,11 +45,41 @@ button:hover {
   color: #c62828;
   margin-top: 8px;
 }
-
 .message-list {
   list-style: none;
   padding: 0;
   margin: 24px 0;
+}
+
+.message-row {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.message-row.mine {
+  justify-content: flex-end;
+}
+
+.message-row.other {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f0f2f5;
+}
+
+.message-row.mine .message-bubble {
+  background: #d9fdd3;
+}
+
+.message-name {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 4px;
 }
 
 .message-item {
@@ -57,11 +87,6 @@ button:hover {
   padding: 10px 12px;
   border-radius: 10px;
   margin-bottom: 8px;
-}
-
-.message-name {
-  font-weight: bold;
-  margin-right: 8px;
 }
 
 .message-form {
