@@ -49,6 +49,9 @@ button:hover {
   list-style: none;
   padding: 0;
   margin: 24px 0;
+
+  height: 400px;
+  overflow-y:auto;
 }
 
 .message-row {
@@ -96,4 +99,9 @@ button:hover {
 
 .message-form input {
   flex: 1;
+}
+
+.scroll-anchor {
+  height: 1px;
+  list-style: none;
 }

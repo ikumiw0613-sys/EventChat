@@ -27,18 +27,26 @@ function ChatPage() {
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [error, setError] = useState("");
 
+  const messagesEndRef = useRef<HTMLLIElement | null>(null);
+
+  const [initialLoaded, setInitialLoaded] = useState(false);
+
   useEffect(() => {
     if (!eventId) return;
 
     // イベント情報取得
     fetch(`http://127.0.0.1:8000/events/${eventId}`)
-    .then((response) => response.json())
-    .then((data) => setEventInfo(data));
+      .then((response) => response.json())
+      .then((data) => setEventInfo(data));
 
     // 過去ログ取得
     fetch(`http://127.0.0.1:8000/events/${eventId}/messages`)
       .then((response) => response.json())
-      .then((data) => setMessages(data));
+      .then((data) => {
+        setMessages(data);
+        setInitialLoaded(true);
+      });
+
 
     // WebSocket接続
     const socket = new WebSocket(
@@ -57,6 +65,21 @@ function ChatPage() {
       socket.close();
     };
   }, [eventId]);
+  //新着チャットで自動スクロール
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
+
+  //参加時自動スクロール
+  useEffect(() => {
+    if (!initialLoaded || !username) return;
+
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "auto",
+    });
+  }, [initialLoaded,username]);
 
   function joinChat() {
     if (!inputName.trim()) return;
@@ -65,35 +88,35 @@ function ChatPage() {
   }
 
   function sendMessage() {
-  if (!content.trim()) {
-    setError("メッセージを入力してください");
-    return;
+    if (!content.trim()) {
+      setError("メッセージを入力してください");
+      return;
+    }
+
+    if (!username.trim()) {
+      setError("名前が設定されていません");
+      return;
+    }
+
+    if (
+      !socketRef.current ||
+      socketRef.current.readyState !== WebSocket.OPEN
+    ) {
+      setError("サーバーに接続できていません");
+      return;
+    }
+
+    setError("");
+
+    socketRef.current.send(
+      JSON.stringify({
+        username,
+        content,
+      })
+    );
+
+    setContent("");
   }
-
-  if (!username.trim()) {
-    setError("名前が設定されていません");
-    return;
-  }
-
-  if (
-    !socketRef.current ||
-    socketRef.current.readyState !== WebSocket.OPEN
-  ) {
-    setError("サーバーに接続できていません");
-    return;
-  }
-
-  setError("");
-
-  socketRef.current.send(
-    JSON.stringify({
-      username,
-      content,
-    })
-  );
-
-  setContent("");
-}
 
   if (!username) {
     return (
@@ -114,54 +137,55 @@ function ChatPage() {
   }
 
   return (
-  <div className="container">
-    <div className="card">
-      <h1>{eventInfo?.name ?? "読み込み中..."}</h1>
+    <div className="container">
+      <div className="card">
+        <h1>{eventInfo?.name ?? "読み込み中..."}</h1>
 
-      <p>参加者名: {username}</p>
+        <p>参加者名: {username}</p>
 
-      {error && <p className="error">{error}</p>}
+        {error && <p className="error">{error}</p>}
 
-      <ul className="message-list">
-  {messages.map((message) => {
-    const isMine = message.username === username;
+        <ul className="message-list">
+          {messages.map((message) => {
+            const isMine = message.username === username;
 
-    return (
-      <li
-        key={message.id}
-        className={`message-row ${isMine ? "mine" : "other"}`}
-      >
-        <div className="message-bubble">
-          <span className="message-name">
-            {message.username}
-          </span>
+            return (
+              <li
+                key={message.id}
+                className={`message-row ${isMine ? "mine" : "other"}`}
+              >
+                <div className="message-bubble">
+                  <span className="message-name">
+                    {message.username}
+                  </span>
 
-          <div>{message.content}</div>
+                  <div>{message.content}</div>
+                </div>
+              </li>
+            );
+          })}
+          <li ref={messagesEndRef} className="scroll-anchor" />
+        </ul>
+
+        <div className="message-form">
+          <input
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                sendMessage();
+              }
+            }}
+            placeholder="メッセージを入力"
+          />
+
+          <button onClick={sendMessage}>
+            送信
+          </button>
         </div>
-      </li>
-    );
-  })}
-</ul>
-
-      <div className="message-form">
-        <input
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              sendMessage();
-            }
-          }}
-          placeholder="メッセージを入力"
-        />
-
-        <button onClick={sendMessage}>
-          送信
-        </button>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default ChatPage;
