@@ -45,13 +45,14 @@ button:hover {
   color: #c62828;
   margin-top: 8px;
 }
+
 .message-list {
   list-style: none;
   padding: 0;
   margin: 24px 0;
 
   height: 400px;
-  overflow-y:auto;
+  overflow-y: auto;
 }
 
 .message-row {
@@ -111,6 +112,11 @@ button:hover {
   padding: 0;
   display: grid;
   gap: 16px;
+}
+
+.event-form {
+  display: flex;
+  gap: 8px;
 }
 
 .event-card {

@@ -1,27 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-
-
-type Event = {
-  id: number;
-  name: string;
-};
+import {
+  createEvent as createEventRequest,
+  getEvents,
+  type EventInfo,
+} from "../api";
 
 function EventList() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventInfo[]>([]);
   const [eventName, setEventName] = useState("");
   const navigate = useNavigate();
   const [error, setError] = useState("");
 
-  function loadEvents() {
-    fetch("http://127.0.0.1:8000/events")
-      .then((response) => response.json())
-      .then((data) => setEvents(data));
-  }
-
   useEffect(() => {
-    loadEvents();
+    getEvents()
+      .then(setEvents)
+      .catch(() => setError("イベント一覧を取得できませんでした"));
   }, []);
 
   async function createEvent() {
@@ -33,27 +27,9 @@ function EventList() {
     setError("");
 
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/events",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: eventName,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("イベント作成に失敗しました");
-      }
-
-      const newEvent = await response.json();
+      const newEvent = await createEventRequest(eventName.trim());
       navigate(`/events/${newEvent.id}`);
-
-    } catch (error) {
+    } catch {
       setError("イベントを作成できませんでした");
     }
   }
@@ -63,7 +39,7 @@ function EventList() {
       <div className="card">
         <h1>イベント一覧</h1>
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="event-form">
           <input
             value={eventName}
             onChange={(e) => setEventName(e.target.value)}
@@ -75,9 +51,7 @@ function EventList() {
             placeholder="イベント名"
           />
 
-          <button onClick={createEvent}>
-            イベント作成
-          </button>
+          <button onClick={createEvent}>イベント作成</button>
         </div>
 
         {error && <p className="error">{error}</p>}
@@ -87,9 +61,7 @@ function EventList() {
             <li key={event.id} className="event-card">
               <h2>{event.name}</h2>
 
-              <Link to={`/events/${event.id}`}>
-                チャットに参加
-              </Link>
+              <Link to={`/events/${event.id}`}>チャットに参加</Link>
             </li>
           ))}
         </ul>

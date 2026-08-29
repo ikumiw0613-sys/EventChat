@@ -1,12 +1,12 @@
-import { Routes,Route } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import EventList from "./pages/EventList";
 import ChatPage from "./pages/ChatPage";
 
 function App() {
   return (
     <Routes>
-      <Route path = "/" element={<EventList />} />
-      <Route path = "/events/:eventId" element = {<ChatPage />}/>
+      <Route path="/" element={<EventList />} />
+      <Route path="/events/:eventId" element={<ChatPage />} />
     </Routes>
   );
 }

@@ -1,18 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-
-type Message = {
-  id: number;
-  event_id: number;
-  username: string;
-  content: string;
-  created_at: string;
-};
-
-type EventInfo = {
-  id: number;
-  name: string;
-};
+import {
+  getEvent,
+  getEventWebSocketUrl,
+  getMessages,
+  type EventInfo,
+  type Message,
+} from "../api";
 
 function ChatPage() {
   const { eventId } = useParams();
@@ -34,57 +28,60 @@ function ChatPage() {
   useEffect(() => {
     if (!eventId) return;
 
-    // イベント情報取得
-    fetch(`http://127.0.0.1:8000/events/${eventId}`)
-      .then((response) => response.json())
-      .then((data) => setEventInfo(data));
-
-    // 過去ログ取得
-    fetch(`http://127.0.0.1:8000/events/${eventId}/messages`)
-      .then((response) => response.json())
-      .then((data) => {
-        setMessages(data);
+    let isActive = true;
+    Promise.all([getEvent(eventId), getMessages(eventId)])
+      .then(([event, loadedMessages]) => {
+        if (!isActive) return;
+        setEventInfo(event);
+        setMessages(loadedMessages);
         setInitialLoaded(true);
+      })
+      .catch(() => {
+        if (isActive) setError("イベントを読み込めませんでした");
       });
 
-
-    // WebSocket接続
-    const socket = new WebSocket(
-      `ws://127.0.0.1:8000/ws/events/${eventId}`
-    );
+    const socket = new WebSocket(getEventWebSocketUrl(eventId));
 
     socketRef.current = socket;
 
     socket.onmessage = (event) => {
-      const message: Message = JSON.parse(event.data);
-
-      setMessages((prev) => [...prev, message]);
+      try {
+        const message: Message = JSON.parse(event.data);
+        if ("id" in message) setMessages((prev) => [...prev, message]);
+      } catch {
+        setError("メッセージを受信できませんでした");
+      }
     };
+
+    socket.onerror = () => setError("サーバーに接続できませんでした");
 
     return () => {
+      isActive = false;
       socket.close();
+      socketRef.current = null;
     };
   }, [eventId]);
-  //新着チャットで自動スクロール
+
+  // 新着チャットで自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
   }, [messages]);
 
-  //参加時自動スクロール
+  // 参加時に自動スクロール
   useEffect(() => {
     if (!initialLoaded || !username) return;
 
     messagesEndRef.current?.scrollIntoView({
       behavior: "auto",
     });
-  }, [initialLoaded,username]);
+  }, [initialLoaded, username]);
 
   function joinChat() {
     if (!inputName.trim()) return;
 
-    setUsername(inputName);
+    setUsername(inputName.trim());
   }
 
   function sendMessage() {
@@ -111,7 +108,7 @@ function ChatPage() {
     socketRef.current.send(
       JSON.stringify({
         username,
-        content,
+        content: content.trim(),
       })
     );
 
@@ -129,9 +126,7 @@ function ChatPage() {
           placeholder="名前"
         />
 
-        <button onClick={joinChat}>
-          参加
-        </button>
+        <button onClick={joinChat}>参加</button>
       </div>
     );
   }
@@ -155,9 +150,7 @@ function ChatPage() {
                 className={`message-row ${isMine ? "mine" : "other"}`}
               >
                 <div className="message-bubble">
-                  <span className="message-name">
-                    {message.username}
-                  </span>
+                  <span className="message-name">{message.username}</span>
 
                   <div>{message.content}</div>
                 </div>
@@ -179,9 +172,7 @@ function ChatPage() {
             placeholder="メッセージを入力"
           />
 
-          <button onClick={sendMessage}>
-            送信
-          </button>
+          <button onClick={sendMessage}>送信</button>
         </div>
       </div>
     </div>
