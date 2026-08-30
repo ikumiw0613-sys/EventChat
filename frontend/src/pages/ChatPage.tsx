@@ -44,6 +44,10 @@ function ChatPage() {
 
     socketRef.current = socket;
 
+    socket.onopen = () => {
+      setError("");
+    };
+
     socket.onmessage = (event) => {
       try {
         const message: Message = JSON.parse(event.data);
@@ -85,6 +89,15 @@ function ChatPage() {
   }
 
   function sendMessage() {
+
+    if (
+      !socketRef.current ||
+      socketRef.current.readyState !== WebSocket.OPEN
+    ) {
+      setError("サーバーに接続できていません");
+      return;
+    }
+
     if (!content.trim()) {
       setError("メッセージを入力してください");
       return;
@@ -95,13 +108,6 @@ function ChatPage() {
       return;
     }
 
-    if (
-      !socketRef.current ||
-      socketRef.current.readyState !== WebSocket.OPEN
-    ) {
-      setError("サーバーに接続できていません");
-      return;
-    }
 
     setError("");
 
