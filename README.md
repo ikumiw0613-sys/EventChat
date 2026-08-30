@@ -7,40 +7,76 @@
 - イベントの作成と一覧表示
 - 表示名を入力してイベントのチャットへ参加
 - 過去のメッセージ履歴の表示
-- WebSocketによるリアルタイムメッセージ配信
-- PostgreSQLへのイベント・メッセージ保存
+- WebSocket によるリアルタイムメッセージ配信
+- PostgreSQL へのイベント・メッセージ保存
 
 ## 使用技術
 
-- フロントエンド: React 19、TypeScript、Vite、React Router
+- フロントエンド: React 19、TypeScript、Vite
 - バックエンド: FastAPI、SQLModel、Uvicorn
 - データベース: PostgreSQL
 - リアルタイム通信: WebSocket
+- 実行環境: Docker Compose
 
 ## 必要な環境
 
-- Node.js 20以上
-- Python 3.10以上
-- PostgreSQL
+- Docker Desktop / Docker Engine
+- Docker Compose
+- （ローカル開発時のみ）Node.js 20以上、Python 3.10以上
 
-## セットアップ
+## クイックスタート
 
-以下のコマンドは、`backend` と `frontend` があるプロジェクトルートから実行します。
+プロジェクトルートで次を実行します。
 
-### 1. PostgreSQLを準備する
+```bash
+docker compose up --build
+```
 
-PostgreSQLに、このアプリケーションで使用するデータベースを作成します。以下ではデータベース名を `event_chat` とします。
+起動後は以下にアクセスできます。
+
+- フロントエンド: http://localhost:5173
+- バックエンド API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+
+初回起動時に PostgreSQL と FastAPI のコンテナが自動的に起動し、必要なテーブルも自動作成されます。
+
+## コンテナ構成
+
+このプロジェクトでは、以下の 3 つのサービスを Docker Compose で管理しています。
+
+- `db`: PostgreSQL 18
+- `backend`: FastAPI アプリ
+- `frontend`: Vite + React アプリ
+
+設定はルートの `compose.yaml` に定義されています。
+
+### 主要なポート
+
+| サービス | ポート | 用途 |
+| --- | --- | --- |
+| PostgreSQL | 5432 | データベース接続 |
+| Backend | 8000 | FastAPI API |
+| Frontend | 5173 | Web UI |
+
+## ローカル開発（Docker を使わない場合）
+
+Docker を使わずに手動で起動する場合は、次の手順を実行します。
+
+### 1. PostgreSQL を準備する
+
+PostgreSQL に `event_chat` という名前のデータベースを作成します。
 
 ### 2. バックエンドを準備する
 
-```powershell
+```bash
 cd backend
 python -m venv .venv
+# Windows PowerShell
 .\.venv\Scripts\Activate.ps1
-pip install fastapi "uvicorn[standard]" sqlmodel "psycopg[binary]" python-dotenv
+pip install -r requirements.txt
 ```
 
-`backend/.env` を作成し、PostgreSQLの接続情報を設定します。プロジェクトルートの `.env.example` をひな形として利用できます。
+`backend/.env` を作成し、接続先を設定します。雛形はルートの `.env.example` を利用できます。
 
 ```dotenv
 DATABASE_URL=postgresql+psycopg://postgres:password@localhost:5432/event_chat
@@ -48,41 +84,45 @@ DATABASE_URL=postgresql+psycopg://postgres:password@localhost:5432/event_chat
 
 ### 3. フロントエンドを準備する
 
-プロジェクトルートへ戻り、依存パッケージをインストールします。
-
-```powershell
-cd ..\frontend
+```bash
+cd frontend
 npm install
 ```
 
-APIの接続先を変更する場合は、`frontend/.env` に次の環境変数を設定します。未設定時は下記の値が使用されます。
+必要に応じて `frontend/.env` を作成し、バックエンドの URL を上書きできます。
 
 ```dotenv
 VITE_API_BASE_URL=http://127.0.0.1:8000
 VITE_WEBSOCKET_BASE_URL=ws://127.0.0.1:8000
 ```
 
-## 起動方法
+### 4. 起動
 
-### バックエンド
+バックエンド:
 
-プロジェクトルートで次のコマンドを実行します。仮想環境を手動で有効化する必要はありません。
-
-```powershell
-.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --app-dir backend
+```bash
+cd backend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --app-dir backend
 ```
 
-APIは `http://127.0.0.1:8000`、Swagger UIは `http://127.0.0.1:8000/docs` で開けます。初回起動時に必要なテーブルが自動作成されます。
+フロントエンド:
 
-### フロントエンド
-
-別のターミナルを開き、プロジェクトルートで次のコマンドを実行します。
-
-```powershell
-npm --prefix frontend run dev
+```bash
+cd frontend
+npm run dev -- --host 0.0.0.0
 ```
 
-ターミナルに表示されるURL（通常は `http://localhost:5173`）をブラウザで開きます。
+## 停止・初期化
+
+```bash
+docker compose down
+```
+
+データベースの保存内容も消したい場合は、次を実行します。
+
+```bash
+docker compose down -v
+```
 
 ## 使い方
 
@@ -93,7 +133,7 @@ npm --prefix frontend run dev
 
 同じイベントを開いている参加者へメッセージがリアルタイムに配信され、データベースにも保存されます。
 
-## API一覧
+## API 一覧
 
 | メソッド | パス | 内容 |
 | --- | --- | --- |
@@ -121,30 +161,47 @@ npm --prefix frontend run dev
 }
 ```
 
-WebSocketでも、メッセージ投稿時と同じ形式のJSONを送信します。
+WebSocket でも、メッセージ投稿時と同じ形式の JSON を送信します。
 
 ## ディレクトリ構成
 
 ```text
-イベントチャット/
+EventChat/
 ├── backend/
-│   └── app/
-│       ├── main.py       # APIとWebSocket
-│       ├── models.py     # データモデル
-│       └── database.py   # PostgreSQL接続
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   └── database.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── tests/
 ├── frontend/
+│   ├── src/
 │   ├── public/
-│   └── src/
-│       ├── pages/        # イベント一覧・チャット画面
-│       ├── api.ts        # API/WebSocket接続設定
-│       ├── App.tsx       # ルーティング
-│       └── main.tsx      # エントリーポイント
+│   ├── Dockerfile
+│   ├── package.json
+│   └── vite.config.ts
+├── compose.yaml
 ├── .env.example
-└── README.md
+├── README.md
+└── .gitignore
 ```
 
 ## 注意事項
 
-- バックエンドとフロントエンドの両方を起動して使用してください。
-- フロントエンドは、既定ではバックエンドが `127.0.0.1:8000` で動作する前提です。
-- `.env` には認証情報が含まれるため、Gitへコミットしないでください。
+- Docker を利用した起動が基本です。ローカル開発でも `backend/.env` と `frontend/.env` を使えます。
+- フロントエンドは既定ではバックエンドの URL を `http://127.0.0.1:8000` と見なして接続します。
+- Docker 環境ではサービス名 `db` を使って接続しています。
+- `.env` には認証情報や接続先が含まれるため、Git へコミットしないでください。
+
+
+## 工夫した点 
+- FastAPIを利用してDBと接続させた
+- WebSocketを利用してリアルタイムで更新できるようにした
+- チャット画面をReactで作成した
+
+## 今後追加したい機能
+- スタンプ機能
+- リアクション機能
+- イベントの概要ページ
+- adminページ
